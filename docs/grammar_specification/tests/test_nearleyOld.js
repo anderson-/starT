@@ -16,7 +16,7 @@ var test_count = 0;
 var tests_failed = [];
 var line_number = 0;
 var header_printed;
-fs.readFileSync('tests/tests0.2.in').toString().split('\n').forEach(function (line) {
+fs.readFileSync('tests/testsOld.in').toString().split('\n').forEach(function (line) {
 	line_number++;
 	var description = line.lastIndexOf('#');
 

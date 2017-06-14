@@ -30,8 +30,6 @@ single_cell_access_operation ->
           | flow_operator unsigned_integer:?
           | multi_cell_access_operation "'" numeric_literal "'"
 
-# single_cell_access_modifier -> "'" "\"" 
-
 memory_operator ->
             left_operator
           | right_operator

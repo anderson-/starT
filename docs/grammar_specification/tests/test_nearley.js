@@ -1,9 +1,7 @@
 const assert = require('assert');
-var ohm = require('ohm-js');
-var Matcher = require('ohm-js/src/Matcher');
-
-var fs = require('fs');
-var g = ohm.grammar(fs.readFileSync('src/starTv0.1.ohm'));
+const nearley = require("nearley");
+const fs = require('fs');
+const grammar = require("./../src/starTgrammar.js");
 
 function print(text){
 	process.stdout.write(text);
@@ -17,9 +15,8 @@ var category = 'None';
 var test_count = 0;
 var tests_failed = [];
 var line_number = 0;
-var matcher = new Matcher(g);
 var header_printed;
-fs.readFileSync('tests/tests0.1.in').toString().split('\n').forEach(function (line) {
+fs.readFileSync('tests/tests.in').toString().split('\n').forEach(function (line) {
 	line_number++;
 	var description = line.lastIndexOf('#');
 
@@ -35,15 +32,28 @@ fs.readFileSync('tests/tests0.1.in').toString().split('\n').forEach(function (li
 			description = ''
 		}
 		test_count++;
-		var passed, code;
+		var passed, code, expected;
 
 		if (line.startsWith('true')) {
 			code = line.substring(5).trim();
-			passed = matcher.setInput(code).match(category).succeeded();
+			expected = true;
 		} else if (line.startsWith('false')){
 			code = line.substring(6).trim();
-			passed = matcher.setInput(code).match(category).failed();
+			expected = false;
 		}
+
+		try {
+			parser = new nearley.Parser(grammar.ParserRules, category);
+			parser.feed(code);
+			if (parser.results.length > 0){
+				passed = expected;
+			} else {
+				passed = !expected;
+			}
+		} catch(parseError) {
+			passed = !expected;
+		}
+
 		if (!header_printed){
 			println('\nAsserting "' + category + '":');
 			header_printed = true;
