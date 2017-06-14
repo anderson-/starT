@@ -1,0 +1,188 @@
+# function_literal
+
+true F0;
+true F0[([(){1 2 3 4}()])];
+true F0[()];
+true F0[([()+])];
+
+# block_statement
+
+true {"asd"}
+true {1 2 3}
+true {1 f2 -3 l-2 L-2}
+
+# if_statement
+
+true ()
+true (:+)
+
+# while_statement
+
+false [] # infinite loop
+true [>]
+
+# load_cell
+
+true {"asd"}
+false {}
+
+# operation
+
+
+# multi_cell_access_operation
+
+true +
+true -
+true *
+true >
+
+# single_cell_access_operation
+
+true O
+true @4
+false >
+true >5
+true *'34'
+true +'f34'
+
+# memory_operator
+
+
+# left_operator
+
+
+# right_operator
+
+
+# out_operator
+
+
+# in_operator
+
+
+# mem_jump_operator
+
+
+# copy_from_operator
+
+
+# math_operator
+
+
+# sum_operator
+
+
+# sub_operator
+
+
+# multi_operator
+
+
+# div_operator
+
+
+# mod_operator
+
+
+# relational_operator
+
+# eq_operator
+
+
+# neq_operator
+
+
+# lt_operator
+
+
+# gt_operator
+
+# le_operator
+
+
+# ge_operator
+
+
+# binary_operator
+
+
+# and_operator
+
+
+# or_operator
+
+
+# xor_operator
+
+
+# shift_left_operator
+
+
+# shift_right_operator
+
+
+# flow_operator
+
+
+# run_operator
+
+
+# code_jmp_operator
+
+
+# break_operator
+
+
+# continue_operator
+
+
+# return_operator
+
+
+# not_null_operator
+
+
+# zero_operator
+
+
+# numeric_literal
+
+true +23
+true f12
+
+# int8_literal
+
+
+# int16_literal
+
+
+# int32_literal
+
+
+# non_zero_integer
+
+true 2
+false 0
+
+# signed_integer
+
+true +2
+
+# unsigned_integer
+
+
+# floating_point
+
+true f12
+false 2
+
+# string_literal
+
+true "asd"
+true "asd\""
+true "\"asd\""
+
+# string_delimiter
+
+
+# valid_string_char
