@@ -69,7 +69,8 @@ void __assert(const char* expr_str, int a, const char* file, int line){
     printf("%s", KYEL);
     printf("\nAssert %d failed on section '%s':\n", assert_no, section_name);
     printf("Expected\t (%s) != 0, found %d\n", expr_str, a);
-    printf("Source:\t\t %s, line %d\n", file, line);
+    printf("Source code:\tassert%s\n", expr_str);
+    printf("Source:\t\t%s, line %d\n",file, line);
     printf("%s", KNRM);
     failed++;
   }
@@ -84,8 +85,9 @@ void __assert_eq(const char* expr_str, int a, int b, const char* file, int line)
     }
     printf("%s", KYEL);
     printf("\nAssert %d failed on section '%s':\n", assert_no, section_name);
-    printf("Expected:\t %d == %d\n", a, b);
-    printf("Source:\t\t %s, line %d\n", file, line);
+    printf("Expected:\t%d == %d\n", a, b);
+    printf("Source code:\tassert_eq%s\n", expr_str);
+    printf("Source:\t\t%s, line %d\n",file, line);
     printf("%s", KNRM);
     failed++;
   } else {
@@ -102,8 +104,9 @@ void __assert_str_eq(const char* expr_str, const char* a, const char* b, const c
     }
     printf("%s", KYEL);
     printf("\nAssert %d failed on section '%s':\n", assert_no, section_name);
-    printf("Expected:\t %s == %s\n", a, b);
-    printf("Source:\t\t %s, line %d\n", file, line);
+    printf("Expected:\t%s == %s\n", a, b);
+    printf("Source code:\tassert_str_eq%s\n", expr_str);
+    printf("Source:\t\t%s, line %d\n",file, line);
     printf("%s", KNRM);
     failed++;
   } else {

@@ -11,9 +11,6 @@
 #   define assert_str_eq(A, B) ;
 #endif
 
-#define CONTINUE 0
-#define ABORT 1
-
 void start_tests();
 void end_tests();
 void begin_section(const char* name);
@@ -21,4 +18,5 @@ void end_section();
 void __assert(const char* expr_str, int a, const char* file, int line);
 void __assert_eq(const char* expr_str, int a, int b, const char* file, int line);
 void __assert_str_eq(const char* expr_str, const char* a, const char* b, const char* file, int line);
+
 #endif
