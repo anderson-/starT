@@ -125,4 +125,4 @@ non_zero_integer -> unsigned_integer:? [1-9]
 signed_integer -> ("+" | "-"):? unsigned_integer
 unsigned_integer -> [0-9]:+
 floating_point -> "f" signed_integer ("." [0-9]:*):? ("e":? signed_integer):?
-string_literal -> "\"" ("\\\"" | [^\\]):* "\""
+string_literal -> "\"" ([^\\"] | "\\" ["\\/bfnrt]):* "\""

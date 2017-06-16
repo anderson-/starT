@@ -184,6 +184,7 @@ false 2
 
 # string_literal
 
+false "asd""
 true "asd"
 true "asd\""
 true "\"asd\""

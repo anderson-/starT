@@ -134,9 +134,8 @@ var grammar = {
     {"name": "floating_point$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "floating_point", "symbols": [{"literal":"f"}, "signed_integer", "floating_point$ebnf$1", "floating_point$ebnf$2"]},
     {"name": "string_literal$ebnf$1", "symbols": []},
-    {"name": "string_literal$ebnf$1$subexpression$1$string$1", "symbols": [{"literal":"\\"}, {"literal":"\""}], "postprocess": function joiner(d) {return d.join('');}},
-    {"name": "string_literal$ebnf$1$subexpression$1", "symbols": ["string_literal$ebnf$1$subexpression$1$string$1"]},
-    {"name": "string_literal$ebnf$1$subexpression$1", "symbols": [/[^\\]/]},
+    {"name": "string_literal$ebnf$1$subexpression$1", "symbols": [/[^\\"]/]},
+    {"name": "string_literal$ebnf$1$subexpression$1", "symbols": [{"literal":"\\"}, /["\\/bfnrt]/]},
     {"name": "string_literal$ebnf$1", "symbols": ["string_literal$ebnf$1", "string_literal$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "string_literal", "symbols": [{"literal":"\""}, "string_literal$ebnf$1", {"literal":"\""}]}
 ]
