@@ -66,6 +66,9 @@ int8_t run(uint8_t* code){
       case ENDIF:{
         break;
       }
+      case ELSE:{
+        break;
+      }
       case WHILE:{
         break;
       }
@@ -75,13 +78,14 @@ int8_t run(uint8_t* code){
       case LOAD:{
         consume();
         switch (*code) {
-          case BINARY:
-            consume();
-            uint8_t l, len = *code++;
-            l = len;
-            while (l--) *mem++ = *code++;
-            mem-=len;
-            break;
+          case BINARY: {
+              consume();
+              uint8_t l, len = *code++;
+              l = len;
+              while (l--) *mem++ = *code++;
+              mem-=len;
+              break;
+            }
           case INT16:
             consume();
             *((int16_t*) mem) = _atoi(int16_t, code);
@@ -91,9 +95,26 @@ int8_t run(uint8_t* code){
             *((int32_t*) mem) = _atoi(int32_t, code);
             break;
           case FLOAT:
+            consume();
             *((float*) mem) = atof(code);
             break;
+          case STRING: {
+              consume();
+              uint8_t l, len = *code++;
+              l = len;
+              while (l--) *mem++ = *code++;
+              *mem++ = 0;
+              mem-=len+1;
+              if (*code != STRING){
+                pe();
+              }
+              break;
+            }
           default:
+            switch (prev_op) {
+              // case :
+            }
+
             *mem = _atoi(int8_t, code);
             break;
         }
@@ -103,6 +124,15 @@ int8_t run(uint8_t* code){
         break;
       }
       case NOP:{
+        // done
+        break;
+      }
+      case NOT_NULL:{
+        *mem = *mem == 0 ? 0 : 1;
+        break;
+      }
+      case ZERO:{
+        *mem = 0;
         break;
       }
       case LEFT:{
@@ -130,15 +160,32 @@ int8_t run(uint8_t* code){
       case COPY_FROM:{
         break;
       }
+      case RUN:{
+        break;
+      }
+      case CODE_JMP:{
+        break;
+      }
+      case BREAK:{
+        break;
+      }
+      case CONTINUE:{
+        break;
+      }
+      case RETURN:{
+        break;
+      }
+
       case SUM:{
         if (next(1) == SCA_MODIFIER){
+          prev_op = *code;
           consume();
-          prev_op = SUM;
           if (next(1) != LOAD){
             pe();
           }
         } else if (next(1) == MCA_MODIFIER){
           consume();
+          *mem += *(mem + 1);
         } else {
           pe();
         }
@@ -168,12 +215,6 @@ int8_t run(uint8_t* code){
       case GE:{
         break;
       }
-      case NOT_NULL:{
-        break;
-      }
-      case ZERO:{
-        break;
-      }
       case AND:{
         break;
       }
@@ -187,30 +228,6 @@ int8_t run(uint8_t* code){
         break;
       }
       case SHIFT_RIGHT:{
-        break;
-      }
-      case RUN:{
-        break;
-      }
-      case CODE_JMP:{
-        break;
-      }
-      case BREAK:{
-        break;
-      }
-      case CONTINUE:{
-        break;
-      }
-      case RETURN:{
-        break;
-      }
-      case ELSE:{
-        break;
-      }
-      case FLOAT:{
-        break;
-      }
-      case STRING:{
         break;
       }
       default:
