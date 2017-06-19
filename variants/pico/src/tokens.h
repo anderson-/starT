@@ -5,6 +5,7 @@
 #ifdef NANO
 #   define FUNCTION        'F'
 #   define ENDFUNCTION     ';'
+#   define RETURN          'r'
 #   define SET_MEM_SIZE    'm'
 #endif
 
@@ -50,10 +51,10 @@
 #define CODE_JMP        '@'
 #define BREAK           'x'
 #define CONTINUE        'c'
-#define RETURN          'r'
 #define ELSE            ':'
 
 #define BINARY          'b'
+#define INT8            'i'
 #define INT16           'l'
 #define INT32           'L'
 #define FLOAT           'f'

@@ -41,6 +41,167 @@
     val*sign; \
 })
 
+#define _case_math_data_op(pre, suf) \
+  case STORE:{ \
+    pre = suf; \
+    break; \
+  } \
+  case SUM:{ \
+    pre += suf; \
+    break; \
+  } \
+  case SUB:{ \
+    pre -= suf; \
+    break; \
+  } \
+  case MULTI:{ \
+    pre *= suf; \
+    break; \
+  } \
+  case DIV:{ \
+    pre /= suf; \
+    break; \
+  } \
+  case EQ:{ \
+    pre = (pre == suf); \
+    break; \
+  } \
+  case NEQ:{ \
+    pre = (pre != suf); \
+    break; \
+  } \
+  case LT:{ \
+    pre = (pre < suf); \
+    break; \
+  } \
+  case GT:{ \
+    pre = (pre > suf); \
+    break; \
+  } \
+  case LE:{ \
+    pre = (pre <= suf); \
+    break; \
+  } \
+  case GE:{ \
+    pre = (pre >= suf); \
+    break; \
+  } \
+
+#define _case_int_data_op(pre, suf) \
+  case MOD:{ \
+    pre %= suf; \
+    break; \
+  } \
+  case AND:{ \
+    pre &= suf; \
+    break; \
+  } \
+  case OR:{ \
+    pre |= suf; \
+    break; \
+  } \
+  case XOR:{ \
+    pre ^= suf; \
+    break; \
+  } \
+  case SHIFT_LEFT:{ \
+    pre <<= suf; \
+    break; \
+  } \
+  case SHIFT_RIGHT:{ \
+    pre >>= suf; \
+    break; \
+  } \
+
+#define _int_data_operation(OP) { \
+  if (next(1) == SCA_MODIFIER){ \
+    prev_op = *code; \
+    consume(); \
+    if (next(1) != LOAD){ \
+      pe(); \
+    } \
+  } else if (next(1) == MCA_MODIFIER){ \
+    consume(); \
+    switch (next(1)){ \
+      case INT32: \
+          *((int32_t*) mem) OP *((int32_t*) (mem + 1)); \
+        break; \
+      case INT16: \
+          *((int16_t*) mem) OP *((int16_t*) (mem + 1)); \
+        break; \
+      case INT8: \
+        *((int8_t*) mem) OP *((int8_t*) (mem + 1)); \
+        break; \
+      default: \
+        pe(); \
+    } \
+    consume(); \
+  } else { \
+    pe(); \
+  } \
+} \
+
+#define _num_data_operation(OP) { \
+  if (next(1) == SCA_MODIFIER){ \
+    prev_op = *code; \
+    consume(); \
+    if (next(1) != LOAD){ \
+      pe(); \
+    } \
+  } else if (next(1) == MCA_MODIFIER){ \
+    consume(); \
+    switch (next(1)){ \
+      case FLOAT: \
+          *((float*) mem) OP *((float*) (mem + 1)); \
+        break; \
+      case INT32: \
+          *((int32_t*) mem) OP *((int32_t*) (mem + 1)); \
+        break; \
+      case INT16: \
+          *((int16_t*) mem) OP *((int16_t*) (mem + 1)); \
+        break; \
+      case INT8: \
+        *((int8_t*) mem) OP *((int8_t*) (mem + 1)); \
+        break; \
+      default: \
+        pe(); \
+    } \
+    consume(); \
+  } else { \
+    pe(); \
+  } \
+} \
+
+#define _num_cmp_operation(OP) { \
+  if (next(1) == SCA_MODIFIER){ \
+    prev_op = *code; \
+    consume(); \
+    if (next(1) != LOAD){ \
+      pe(); \
+    } \
+  } else if (next(1) == MCA_MODIFIER){ \
+    consume(); \
+    switch (next(1)){ \
+      case FLOAT: \
+          *((float*) mem) = *((float*) mem) OP *((float*) (mem + 1)); \
+        break; \
+      case INT32: \
+          *((int32_t*) mem) = *((int32_t*) mem) OP *((int32_t*) (mem + 1)); \
+        break; \
+      case INT16: \
+          *((int16_t*) mem) = *((int16_t*) mem) OP *((int16_t*) (mem + 1)); \
+        break; \
+      case INT8: \
+        *((int8_t*) mem) = *((int8_t*) mem) OP *((int8_t*) (mem + 1)); \
+        break; \
+      default: \
+        pe(); \
+    } \
+    consume(); \
+  } else { \
+    pe(); \
+  } \
+} \
 
 uint8_t* mem = NULL;
 uint8_t* mem_begin = NULL;
@@ -79,6 +240,9 @@ int8_t run(uint8_t* code){
         consume();
         switch (*code) {
           case BINARY: {
+              if (prev_op != STORE){
+                pe();
+              }
               consume();
               uint8_t l, len = *code++;
               l = len;
@@ -86,19 +250,10 @@ int8_t run(uint8_t* code){
               mem-=len;
               break;
             }
-          case INT16:
-            consume();
-            *((int16_t*) mem) = _atoi(int16_t, code);
-            break;
-          case INT32:
-            consume();
-            *((int32_t*) mem) = _atoi(int32_t, code);
-            break;
-          case FLOAT:
-            consume();
-            *((float*) mem) = atof(code);
-            break;
           case STRING: {
+              if (prev_op != STORE){
+                pe();
+              }
               consume();
               uint8_t l, len = *code++;
               l = len;
@@ -110,12 +265,45 @@ int8_t run(uint8_t* code){
               }
               break;
             }
+          case FLOAT:
+            consume();
+            switch (prev_op) {
+              _case_math_data_op(*((float*) mem), atof(code))
+              default:
+                pe();
+                break;
+            }
+            break;
+          case INT32:
+            consume();
+              switch (prev_op) {
+                _case_math_data_op(*((int32_t*) mem), _atoi(int32_t, code))
+                _case_int_data_op(*((int32_t*) mem), _atoi(int32_t, code))
+                default:
+                  pe();
+                  break;
+              }
+            break;
+          case INT16:
+            consume();
+            switch (prev_op) {
+              _case_math_data_op(*((int16_t*) mem), _atoi(int16_t, code))
+              _case_int_data_op(*((int16_t*) mem), _atoi(int16_t, code))
+              default:
+                pe();
+                break;
+            }
+            break;
+          case INT8:
+            consume();
           default:
             switch (prev_op) {
-              // case :
+              _case_math_data_op(*mem, _atoi(int8_t, code))
+              _case_int_data_op(*mem, _atoi(int8_t, code))
+              default:
+                pe();
+                break;
             }
-
-            *mem = _atoi(int8_t, code);
             break;
         }
         while(*code != ENDLOAD){
@@ -136,9 +324,19 @@ int8_t run(uint8_t* code){
         break;
       }
       case LEFT:{
+        if (next(1) == LOAD){
+
+        } else {
+          _num_cmp_operation(<);
+        }
         break;
       }
       case RIGHT:{
+        if (next(1) == LOAD){
+
+        } else {
+          _num_cmp_operation(>);
+        }
         break;
       }
       case OUT:{
@@ -172,62 +370,62 @@ int8_t run(uint8_t* code){
       case CONTINUE:{
         break;
       }
-      case RETURN:{
-        break;
-      }
 
       case SUM:{
-        if (next(1) == SCA_MODIFIER){
-          prev_op = *code;
-          consume();
-          if (next(1) != LOAD){
-            pe();
-          }
-        } else if (next(1) == MCA_MODIFIER){
-          consume();
-          *mem += *(mem + 1);
-        } else {
-          pe();
-        }
+        _num_data_operation(+=);
         break;
       }
       case SUB:{
+        _num_data_operation(-=);
         break;
       }
       case MULTI:{
+        _num_data_operation(*=);
         break;
       }
       case DIV:{
+        _num_data_operation(/=);
         break;
       }
+
       case MOD:{
-        break;
-      }
-      case EQ:{
-        break;
-      }
-      case NEQ:{
-        break;
-      }
-      case LE:{
-        break;
-      }
-      case GE:{
+        _int_data_operation(/=);
         break;
       }
       case AND:{
+        _int_data_operation(&=);
         break;
       }
       case OR:{
+        _int_data_operation(|=);
         break;
       }
       case XOR:{
+        _int_data_operation(^=);
         break;
       }
       case SHIFT_LEFT:{
+        _int_data_operation(<<=);
         break;
       }
       case SHIFT_RIGHT:{
+        _int_data_operation(>>=);
+        break;
+      }
+      case EQ:{
+        _num_cmp_operation(==);
+        break;
+      }
+      case NEQ:{
+        _num_cmp_operation(!=);
+        break;
+      }
+      case LE:{
+        _num_cmp_operation(<=);
+        break;
+      }
+      case GE:{
+        _num_cmp_operation(>=);
         break;
       }
       default:
@@ -236,4 +434,5 @@ int8_t run(uint8_t* code){
     }
     code++;
   }
+  return 0;
 }
