@@ -1,52 +1,150 @@
 #include <stdio.h>
-#include "assert.h"
+#include <stdlib.h>
 #define _UNIT_TEST
+#include "assert.h"
 #include "../src/star_t.h"
+
+
+int v(int a, float b){
+  int i = (int)(b*a);
+  printf("asd %d %f = %d\n", a, b, i);
+  return i;
+}
 
 int main(void){
 
-  begin_section("numeric_literal");
-  assert_eq((run("s{1}"), *M[0]), 1);
-  assert_eq((run("s{i1}"), *M[0]), 1);
-  assert_eq((run("s{255}"), *M[0]), 255);
-  assert_eq((run("s{252}"), *M[0]), 252);
-  assert_eq((run("s{l1}"), ((int16_t*) *M)[0]), 1);
-  assert_eq((run("s{l+2}"), ((int16_t*) *M)[0]), 2);
-  assert_eq((run("s{l-1}"), ((int16_t*) *M)[0]), -1);
-  assert_eq((run("s{L-1}"), ((int16_t*) *M)[0]), -1);
-  assert_eq((run("s{-1}"), ((int8_t*) *M)[0]), -1);
-  assert_eq((run("s{-10}"), ((int8_t*) *M)[0]), -10);
-  assert((run("s{f-3.22e-2}"), ((float*) *M)[0]) == -3.22e-2f);
-  assert((run("s{f12e+2}"), ((float*) *M)[0]) == 12e+2f);
-  assert((run("s{f4.0}"), ((float*) *M)[0]) == 4.0f);
-  assert((run("s{f-0.002}"), ((float*) *M)[0]) == -0.002f);
+  // void * (* p) (void *);
+  // p = (void * (* ) (void *)) v;
+  //
+  // int i = 123;
+  // float f = 0.12432f;
+  //
+  // uint8_t * data = (uint8_t *) malloc (sizeof(int) + sizeof(float));
+  // *((int*)data) = i;
+  // *((float*)(data + sizeof(int))) = f;
+  // // ((int*)data)[0] = i;
+  // // ((float*)(data + sizeof(int)))[1] = f;
+  //
+  // p(&i);
+  //
+  // return 0;
+
+
+  begin_section("NOP");
+  assert_eq(run(" "), 0);
+  assert_eq(run("   "), 0);
+  // assert_eq(run(" ` "), -1);
   end_section();
-  begin_section("byte_array_literal");
-  assert_eq((run("s{b\x01\xFF}"), (*M)[0]), 0xFF);
-  assert_eq((run("s{b\x04\xFF\xFF\x23\xFF}"), (*M)[2]), 0x23);
-  assert_eq((run("s{b\x04\xFF\x01\x23\x02}"), (*M)[1]), 0x1);
-  assert_eq((run("s{b\x04\xFF\x01\x23\x02}"), (*M)[3]), 0x2);
-  assert_eq((run("s{b\x01\x01}s{b\x01\x02}"), (*M)[0]), 0x2);
-  assert_eq((run("s{b\x01\x01}s{b\x01\x02}s{b\x01\x03}"), (*M)[0]), 0x3);
+
+  begin_section("DATA TYPES");
+  assert_eq((run("3"), s->info.type), INT8);
+  assert_eq((run("3"), s->A.i8[0]), 3);
+  assert_eq((run("1"), s->A.i8[0]), 1);
+  assert_eq((run("10"), s->A.i8[0]), 10);
+  assert_eq((run("20"), s->A.i8[0]), 20);
+  assert_eq((run("33"), s->A.i8[0]), 33);
+  assert_eq((run("128"), s->A.i8[0]), 128);
+  assert_eq((run("255"), s->A.i8[0]), 255);
+  assert_eq((run("256"), s->A.i8[0]), 0);
+  assert_eq((run("257"), s->A.i8[0]), 1);
+  assert_eq((run("257"), s->A.i8[1]), 0);
+  assert_eq((run("b"), s->info.type), INT8);
+  assert_eq((run("b"), s->A.i8[0]), 0);
+  assert_eq((run("b3"), s->info.type), INT8);
+  assert_eq((run("b3"), s->A.i8[0]), 3);
+  assert_eq((run("b33"), s->A.i8[0]), 33);
+  assert_eq((run("b128"), s->A.i8[0]), 128);
+  assert_eq((run("b255"), s->A.i8[0]), 255);
+  assert_eq((run("b256"), s->A.i8[0]), 0);
+  assert_eq((run("b257"), s->A.i8[0]), 1);
+  assert_eq((run("b257"), s->A.i8[1]), 0);
+
+  assert_eq((run("i3"), s->info.type), INT16);
+  assert_eq((run("I3"), s->info.type), INT32);
+  assert_eq((run("f3"), s->info.type), FLOAT);
   end_section();
-  begin_section("string_literal");
-  assert_eq((run("s{\"\x04test\"}"), (*M)[0]), 't');
-  assert_eq((run("s{\"\x04test\"}"), (*M)[1]), 'e');
-  assert_eq((run("s{\"\x04test\"}"), (*M)[2]), 's');
-  assert_eq((run("s{\"\x04test\"}"), (*M)[3]), 't');
-  assert_eq((run("s{\"\x04test\"}"), (*M)[4]), '\0');
+
+  begin_section("STORE");
+  assert_eq((run("3s"), (*M)[0]), 3);
   end_section();
-  begin_section("single_cell_access_operation");
-  assert_eq((run("+'{4}"), (*M)[0]), 4);
-  assert_eq((run("+'{4}-'{2}"), (*M)[0]), 2);
-  assert_eq((run("+'{l2002}-'{l2000}"), (*M)[0]), 2);
-  assert_eq((run("+'{L2002}-'{L2000}"), (*M)[0]), 2);
-  assert((run("+'{f4.5}-'{f4.0}"), ((float*) *M)[0]) == 0.5f);
+
+  begin_section("Move/Load");
+  assert_eq((run("3s>4s"), (*M)[0]), 3);
+  assert_eq((run("3s>4s"), (*M)[1]), 4);
+  assert_eq((run(">4s<3s"), (*M)[0]), 3);
+  assert_eq((run(">4s<3s"), (*M)[1]), 4);
+  assert_eq((run(">4s<3s1"), s->A.i8[0]), 1);
+  assert_eq((run(">4s<3s1l"), s->A.i8[0]), 3);
+  assert_eq((run(">4s<3s1>l"), s->A.i8[0]), 4);
   end_section();
-  begin_section("multi_cell_access_operation");
-  assert_eq((run("s{b\x02\x01\x02}s{b\x02\x01\x03}+\"i"), (*M)[0]), 4);
-  assert_eq((run("s{b\x02\x01\x02}s{b\x02\x01\x03}-\"i"), ((int8_t*) *M)[0]), -2);
-  assert_eq((run("s{1 3}-\"i"), ((int8_t*) *M)[0]), -2);
+
+  begin_section("SWITCH");
+  assert_eq((run("2"), s->A.i8[0]), 2);
+  assert_eq((run("2@"), s->B.i8[0]), 2);
+  assert_eq((run("2@3"), s->A.i8[0]), 3);
+  assert_eq((run("2@3"), s->B.i8[0]), 2);
+  end_section();
+
+  begin_section("COMP");
+  assert_eq((run("0@1?<"), s->info.comp), 0);
+  assert_eq((run("1@1?<"), s->info.comp), 0);
+  assert_eq((run("2@1?<"), s->info.comp), 1);
+  assert_eq((run("0@1@?>"), s->info.comp), 0);
+  assert_eq((run("1@1@?>"), s->info.comp), 0);
+  assert_eq((run("2@1@?>"), s->A.i8[0]), 2);
+  assert_eq((run("2@1@?>"), s->B.i8[0]), 1);
+  assert_eq((run("2@1@?>"), s->info.comp), 1);
+  end_section();
+
+  begin_section("OP");
+  assert_eq((run("12@1+"), s->A.i8[0]), 13);
+  assert_eq((run("1@12-"), s->A.i8[0]), 11);
+  assert_eq((run("1@12--"), s->A.i8[0]), 10);
+  assert_eq((run("2@3*"), s->A.i8[0]), 6);
+  end_section();
+
+  begin_section("IF");
+  assert_eq(run("()"), 0);
+  assert_eq(run("(:)"), 0);
+  assert_eq(run("1(2)"), 0);
+  assert_eq((run("1(2)"), s->A.i8[0]), 1);
+  assert_eq((run("1(2:)"), s->A.i8[0]), 1);
+  assert_eq((run("1(:2)"), s->A.i8[0]), 2);
+  assert_eq((run("?!(1:2)"), s->A.i8[0]), 2);
+  assert_eq(run("?=(1:2)"), 0);
+  assert_eq(run("?!(1:2)"), 0);
+  assert_eq((run("(2:3)"), s->A.i8[0]), 3);
+  assert_eq(run("?=(1:2)"), 0);
+  assert_eq((run("?=(1:2)"), s->info.comp), 1);
+  assert_eq((run("?=(1:2)"), s->A.i8[0]), 1);
+  assert_eq((run("0@1@?>(2:3)s"), s->mem[0]), 3);
+  assert_eq((run("1@1@?>(2:3)s"), s->mem[0]), 3);
+  assert_eq((run("2@1@?>(2:3)s"), s->mem[0]), 2);
+  end_section();
+
+  begin_section("WHILE");
+  assert_eq(run("[]"), 0);
+  assert_eq(run("1[2]"), 0);
+  assert_eq((run("1[2]"), s->A.i8[0]), 1);
+  assert_eq(run("?=[x]"), 0);
+  assert_eq(run("1[2x3]"), 0);
+  assert_eq((run("1[2x3]"), s->A.i8[0]), 1);
+  assert_eq(run("?=1[2x3]"), 0);
+  assert_eq((run("?=1[2x3]"), s->A.i8[0]), 2);
+  assert_eq(run("1?![x]"), 0);
+  assert_eq((run("1?![x]"), s->A.i8[0]), 1);
+  assert_eq(run("1@1?![-?!]"), 0);
+  assert_eq((run("12@?![+?!]"), s->A.i8[0]), 12);
+  assert_eq((run("12@?![+?!]"), s->B.i8[0]), 12);
+  assert_eq((run("8s?![1@l-s?! c x ]"), s->A.i8[0]), 1);
+  end_section();
+
+  begin_section("Fibonacci");
+  assert_eq((run("8s>0s>1s?![2<1@l-s?!2> l@<l@s+>s]"), s->A.i8[0]), 21);
+  assert_eq((run("9s>0s>1s?![2<1@l-s?!2> l@<l@s+>s]"), s->A.i8[0]), 34);
+  assert_eq((run("10s>0s>1s?![2<1@l-s?!2> l@<l@s+>s]"), s->A.i8[0]), 55);
+  assert_eq((run("I46s>I0s>I1s?![2<I1@l-s?!2> l@<l@s+>s]"), s->A.i32), 1836311903);
+  assert_eq((run("tI46s>0s>1s?![2<1@l-s?!2> l@<l@s+>s]"), s->A.i32), 1836311903);
   end_section();
 
   end_tests();

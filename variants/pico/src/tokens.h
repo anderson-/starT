@@ -10,21 +10,31 @@
 #endif
 
 #define IF              '('
+#define ELSE            ':'
 #define ENDIF           ')'
 #define WHILE           '['
+#define BREAK           'x'
+#define CONTINUE        'c'
 #define ENDWHILE        ']'
-#define LOAD            '{'
-#define ENDLOAD         '}'
+#define ARRAY           '{'
+#define ENDARRAY        '}'
 
-#define NOP             '\\'
-
+#define NOP             ' '
+#define COND_MODIFIER   '?'
+#define TYPE_SET        't' //eh necessario?
 #define LEFT            '<'
 #define RIGHT           '>'
+#define CLEAR           'C'
+#define SWITCH          '@'
+#define STORE           's'
+#define LOAD            'l'
+
 #define OUT             '.'
 #define IN              ','
-#define STORE           's'
-#define MEM_JUMP        'p'
+#define MEM_JUMP        'm' //signed int
 #define COPY_FROM       'v'
+#define RUN             '^'
+#define CODE_JMP        'J'
 
 #define SUM             '+'
 #define SUB             '-'
@@ -32,55 +42,37 @@
 #define DIV             '/'
 #define MOD             '%'
 
-#define EQ              '='
-#define NEQ             '!'
-#define LT              '<'
-#define GT              '>'
-#define LE              'l'
-#define GE              'g'
-#define NOT_NULL        '?'
-#define ZERO            'O'
+#define C_EQ            '='
+#define C_NEQ           '!'
+#define C_LT            '<'
+#define C_GT            '>'
+#define C_LE            'l'
+#define C_GE            'g'
+#define C_NOT_NULL      '?'
+#define C_ZERO          'O'
 
 #define AND             '&'
 #define OR              '|'
 #define XOR             '^'
-#define SHIFT_LEFT      'L'
-#define SHIFT_RIGHT     'R'
+#define SHIFT_LEFT      '<'
+#define SHIFT_RIGHT     '>'
+#define INV             '~'
 
-#define RUN             '~'
-#define CODE_JMP        '@'
-#define BREAK           'x'
-#define CONTINUE        'c'
-#define ELSE            ':'
-
-#define BINARY          'b'
-#define INT8            'i'
-#define INT16           'l'
-#define INT32           'L'
-#define FLOAT           'f'
+#define T_INT8          'b'
+#define T_INT16         'i'
+#define T_INT32         'I'
+#define T_FLOAT         'f'
 #define STRING          '\"'
+#define CHAR            '\''
 
-#define SCA_MODIFIER   '\''
-#define MCA_MODIFIER   '\"'
+
+#define INT8    0
+#define INT16   1
+#define INT32   2
+#define FLOAT   3
+
 
 #define SYS_REALLOC
 #define SYS_SW_DELAY
 
-/*
- * int v0;				m1v0
- * scanf("%d", &v0);	,
- * while(v0){			[v0|
- * 	v0 = v0 - 1;		v0-1
- * 	printf("%d");		.
- * 	printf("\n");		{10}.
- * }					]
- * v0 = !v0;			!
- * if (v0){				(v0|
- * 	printf("FIM");		{FIM}.
- * }					)
- *
- *
- * m1v0,[v0|v0-1.{10}.]!(v0|{FIM}.)       size:33 bytes
- * m1#,[-1.>1{10}.<1]
- */
- #endif
+#endif

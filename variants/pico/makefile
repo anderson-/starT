@@ -1,9 +1,7 @@
-.PHONY: test_star_t
+.PHONY: test
 
-test_star_t:
-	gcc test/test_star_t.c test/assert.c src/star_t.c -o /tmp/t
-	/tmp/t
+test:
+	gcc test/test_star_t.c test/assert.c src/star_t.c -o /tmp/t && /tmp/t
 
-test_assert:
-	gcc test/test_assert.c test/assert.c -o /tmp/t
-	/tmp/t
+test-assert:
+	gcc test/test_assert.c test/assert.c -o /tmp/t &&	/tmp/t

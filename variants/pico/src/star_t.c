@@ -1,13 +1,13 @@
 #include <stdlib.h>
 #include "star_t.h"
-#include "assert.h"
 
-#ifndef NDEBUG
+#ifndef DEBUG
 #   include <stdio.h>
+#   include "assert.h"
 #   define pe() __parsing_error(__FILE__, __LINE__, code_begin, code); return -1;
     void __parsing_error(const char* file, int line, const char* code_begin, const char* pos){
-      int at = (int)(pos - code_begin + 1);
-      char token = *(pos + 1);
+      int at = (int)(pos - code_begin);
+      char token = *(pos);
       printf("Parsing error: Unexpected token '%c' at position %d on file '%s', line %d.\n", token, at, file, line);
       printf("\t%s\n\t", code_begin);
       while(at){
@@ -26,410 +26,322 @@
 #define prev(x) *(code - x)
 #define consume() (code++)
 
-#define _atoi(_type, str) ({ \
-    _type val = 0; \
-    int8_t sign = 1; \
-    if (*str == '+'){ \
-      str++; \
-    } else if (*str == '-'){ \
-      sign = -1; \
-      str++; \
-    } \
-    while(*str >= '0' && *str <= '9'){ \
-      val = val*10 + (*str++ - '0'); \
-    } \
-    val*sign; \
-})
-
-#define _case_math_data_op(pre, suf) \
-  case STORE:{ \
-    pre = suf; \
-    break; \
-  } \
-  case SUM:{ \
-    pre += suf; \
-    break; \
-  } \
-  case SUB:{ \
-    pre -= suf; \
-    break; \
-  } \
-  case MULTI:{ \
-    pre *= suf; \
-    break; \
-  } \
-  case DIV:{ \
-    pre /= suf; \
-    break; \
-  } \
-  case EQ:{ \
-    pre = (pre == suf); \
-    break; \
-  } \
-  case NEQ:{ \
-    pre = (pre != suf); \
-    break; \
-  } \
-  case LT:{ \
-    pre = (pre < suf); \
-    break; \
-  } \
-  case GT:{ \
-    pre = (pre > suf); \
-    break; \
-  } \
-  case LE:{ \
-    pre = (pre <= suf); \
-    break; \
-  } \
-  case GE:{ \
-    pre = (pre >= suf); \
-    break; \
-  } \
-
-#define _case_int_data_op(pre, suf) \
-  case MOD:{ \
-    pre %= suf; \
-    break; \
-  } \
-  case AND:{ \
-    pre &= suf; \
-    break; \
-  } \
-  case OR:{ \
-    pre |= suf; \
-    break; \
-  } \
-  case XOR:{ \
-    pre ^= suf; \
-    break; \
-  } \
-  case SHIFT_LEFT:{ \
-    pre <<= suf; \
-    break; \
-  } \
-  case SHIFT_RIGHT:{ \
-    pre >>= suf; \
-    break; \
-  } \
-
-#define _int_data_operation(OP) { \
-  if (next(1) == SCA_MODIFIER){ \
-    prev_op = *code; \
-    consume(); \
-    if (next(1) != LOAD){ \
-      pe(); \
-    } \
-  } else if (next(1) == MCA_MODIFIER){ \
-    consume(); \
-    switch (next(1)){ \
-      case INT32: \
-          *((int32_t*) mem) OP *((int32_t*) (mem + 1)); \
-        break; \
-      case INT16: \
-          *((int16_t*) mem) OP *((int16_t*) (mem + 1)); \
-        break; \
-      case INT8: \
-        *((int8_t*) mem) OP *((int8_t*) (mem + 1)); \
-        break; \
-      default: \
-        pe(); \
-    } \
-    consume(); \
-  } else { \
-    pe(); \
-  } \
-} \
-
-#define _num_data_operation(OP) { \
-  if (next(1) == SCA_MODIFIER){ \
-    prev_op = *code; \
-    consume(); \
-    if (next(1) != LOAD){ \
-      pe(); \
-    } \
-  } else if (next(1) == MCA_MODIFIER){ \
-    consume(); \
-    switch (next(1)){ \
-      case FLOAT: \
-          *((float*) mem) OP *((float*) (mem + 1)); \
-        break; \
-      case INT32: \
-          *((int32_t*) mem) OP *((int32_t*) (mem + 1)); \
-        break; \
-      case INT16: \
-          *((int16_t*) mem) OP *((int16_t*) (mem + 1)); \
-        break; \
-      case INT8: \
-        *((int8_t*) mem) OP *((int8_t*) (mem + 1)); \
-        break; \
-      default: \
-        pe(); \
-    } \
-    consume(); \
-  } else { \
-    pe(); \
-  } \
-} \
-
-#define _num_cmp_operation(OP) { \
-  if (next(1) == SCA_MODIFIER){ \
-    prev_op = *code; \
-    consume(); \
-    if (next(1) != LOAD){ \
-      pe(); \
-    } \
-  } else if (next(1) == MCA_MODIFIER){ \
-    consume(); \
-    switch (next(1)){ \
-      case FLOAT: \
-          *((float*) mem) = *((float*) mem) OP *((float*) (mem + 1)); \
-        break; \
-      case INT32: \
-          *((int32_t*) mem) = *((int32_t*) mem) OP *((int32_t*) (mem + 1)); \
-        break; \
-      case INT16: \
-          *((int16_t*) mem) = *((int16_t*) mem) OP *((int16_t*) (mem + 1)); \
-        break; \
-      case INT8: \
-        *((int8_t*) mem) = *((int8_t*) mem) OP *((int8_t*) (mem + 1)); \
-        break; \
-      default: \
-        pe(); \
-    } \
-    consume(); \
-  } else { \
-    pe(); \
-  } \
-} \
-
 uint8_t* mem = NULL;
 uint8_t* mem_begin = NULL;
 uint8_t* code_begin = NULL;
+State * s;
 
 void begin(){
   if (mem_begin){
     free(mem_begin);
   }
-  mem = mem_begin = (uint8_t*) malloc (sizeof(uint8_t) * MEM_SIZE);
+  mem = mem_begin = (uint8_t*) malloc(sizeof(uint8_t) * MEM_SIZE);
   code_begin = NULL;
+  s = (State*) malloc(sizeof(State));
+  s->mem = mem;
+  s->info.comp = 0;
+  s->info.type = 0;
+  s->A.i16[0] = 0;
+  s->A.i16[1] = 0;
+  s->B.i16[0] = 0;
+  s->B.i16[1] = 0;
 }
 
 int8_t run(uint8_t* code){
+  // int L = 300;
   begin();
   code_begin = code;
-  uint8_t prev_op;
   while (*code){
+    // if (L==0) {printf("BREAK!!\n"); break;} else L--;
     switch (*code) {
-      case IF:{
-        break;
-      }
-      case ENDIF:{
-        break;
-      }
-      case ELSE:{
-        break;
-      }
-      case WHILE:{
-        break;
-      }
-      case ENDWHILE:{
-        break;
-      }
-      case LOAD:{
-        consume();
-        switch (*code) {
-          case BINARY: {
-              if (prev_op != STORE){
-                pe();
-              }
-              consume();
-              uint8_t l, len = *code++;
-              l = len;
-              while (l--) *mem++ = *code++;
-              mem-=len;
-              break;
-            }
-          case STRING: {
-              if (prev_op != STORE){
-                pe();
-              }
-              consume();
-              uint8_t l, len = *code++;
-              l = len;
-              while (l--) *mem++ = *code++;
-              *mem++ = 0;
-              mem-=len+1;
-              if (*code != STRING){
-                pe();
-              }
-              break;
-            }
-          case FLOAT:
-            consume();
-            switch (prev_op) {
-              _case_math_data_op(*((float*) mem), atof(code))
-              default:
-                pe();
-                break;
-            }
+      case COND_MODIFIER:
+        switch (next(1)) {
+          case C_EQ:
+            if (s->info.type == INT8) s->info.comp = s->A.i8[0] == s->B.i8[0];
+            else if (s->info.type == INT16) s->info.comp = s->A.i16[0] == s->B.i16[0];
+            else if (s->info.type == INT32) s->info.comp = s->A.i32 == s->B.i32;
+            else if (s->info.type == FLOAT) s->info.comp = s->A.f32 == s->B.f32;
             break;
-          case INT32:
-            consume();
-              switch (prev_op) {
-                _case_math_data_op(*((int32_t*) mem), _atoi(int32_t, code))
-                _case_int_data_op(*((int32_t*) mem), _atoi(int32_t, code))
-                default:
-                  pe();
-                  break;
-              }
+          case C_NEQ:
+            if (s->info.type == INT8) s->info.comp = s->A.i8[0] != s->B.i8[0];
+            else if (s->info.type == INT16) s->info.comp = s->A.i16[0] != s->B.i16[0];
+            else if (s->info.type == INT32) s->info.comp = s->A.i32 != s->B.i32;
+            else if (s->info.type == FLOAT) s->info.comp = s->A.f32 != s->B.f32;
             break;
-          case INT16:
-            consume();
-            switch (prev_op) {
-              _case_math_data_op(*((int16_t*) mem), _atoi(int16_t, code))
-              _case_int_data_op(*((int16_t*) mem), _atoi(int16_t, code))
-              default:
-                pe();
-                break;
-            }
+          case C_LT:
+            if (s->info.type == INT8) s->info.comp = s->A.i8[0] < s->B.i8[0];
+            else if (s->info.type == INT16) s->info.comp = s->A.i16[0] < s->B.i16[0];
+            else if (s->info.type == INT32) s->info.comp = s->A.i32 < s->B.i32;
+            else if (s->info.type == FLOAT) s->info.comp = s->A.f32 < s->B.f32;
             break;
-          case INT8:
-            consume();
+          case C_GT:
+            if (s->info.type == INT8) s->info.comp = s->A.i8[0] > s->B.i8[0];
+            else if (s->info.type == INT16) s->info.comp = s->A.i16[0] > s->B.i16[0];
+            else if (s->info.type == INT32) s->info.comp = s->A.i32 > s->B.i32;
+            else if (s->info.type == FLOAT) s->info.comp = s->A.f32 > s->B.f32;
+            break;
+          case C_LE:
+            if (s->info.type == INT8) s->info.comp = s->A.i8[0] <= s->B.i8[0];
+            else if (s->info.type == INT16) s->info.comp = s->A.i16[0] <= s->B.i16[0];
+            else if (s->info.type == INT32) s->info.comp = s->A.i32 <= s->B.i32;
+            else if (s->info.type == FLOAT) s->info.comp = s->A.f32 <= s->B.f32;
+            break;
+          case C_GE:
+            if (s->info.type == INT8) s->info.comp = s->A.i8[0] >= s->B.i8[0];
+            else if (s->info.type == INT16) s->info.comp = s->A.i16[0] >= s->B.i16[0];
+            else if (s->info.type == INT32) s->info.comp = s->A.i32 >= s->B.i32;
+            else if (s->info.type == FLOAT) s->info.comp = s->A.f32 >= s->B.f32;
+            break;
+          case C_NOT_NULL:
+            if (s->info.type == INT8) s->info.comp = s->A.i8[0] != 0;
+            else if (s->info.type == INT16) s->info.comp = s->A.i16[0] != 0;
+            else if (s->info.type == INT32) s->info.comp = s->A.i32 != 0;
+            else if (s->info.type == FLOAT) s->info.comp = s->A.f32 != 0;
+            break;
+          case C_ZERO:
+            if (s->info.type == INT8) s->info.comp = s->A.i8[0] == 0;
+            else if (s->info.type == INT16) s->info.comp = s->A.i16[0] == 0;
+            else if (s->info.type == INT32) s->info.comp = s->A.i32 == 0;
+            else if (s->info.type == FLOAT) s->info.comp = s->A.f32 == 0;
+            break;
           default:
-            switch (prev_op) {
-              _case_math_data_op(*mem, _atoi(int8_t, code))
-              _case_int_data_op(*mem, _atoi(int8_t, code))
-              default:
-                pe();
-                break;
-            }
+            pe();
+        }
+        consume();
+        break;
+      case TYPE_SET:
+        switch (next(1)) {
+          case T_INT8:
+            s->info.type = 0;
             break;
+          case T_INT16:
+            s->info.type = 1;
+            break;
+          case T_INT32:
+            s->info.type = 2;
+            break;
+          case T_FLOAT:
+            s->info.type = 3;
+            break;
+          default:
+            pe();
         }
-        while(*code != ENDLOAD){
-          code++;
-        }
         break;
-      }
-      case NOP:{
-        // done
-        break;
-      }
-      case NOT_NULL:{
-        *mem = *mem == 0 ? 0 : 1;
-        break;
-      }
-      case ZERO:{
-        *mem = 0;
-        break;
-      }
-      case LEFT:{
-        if (next(1) == LOAD){
-
+      case LEFT:
+        if (next(1) == SHIFT_LEFT){
+          if (s->info.type == INT8) s->A.i8[0] <<= s->B.i8[0];
+          else if (s->info.type == INT16) s->A.i16[0] <<= s->B.i16[0];
+          else if (s->info.type == INT32) s->A.i32 <<= s->B.i32;
+          consume();
         } else {
-          _num_cmp_operation(<);
+          uint8_t inc = ((code - code_begin) && prev(1) > '0' && prev(1) < '9') ? s->A.i8[0] : 1;
+          if (s->info.type == INT8) s->mem -= 1 * inc;
+          else if (s->info.type == INT16) s->mem -= 2 * inc;
+          else if (s->info.type == INT32) s->mem -= 4 * inc;
+          else if (s->info.type == FLOAT) s->mem -= 4 * inc;
         }
         break;
-      }
-      case RIGHT:{
-        if (next(1) == LOAD){
-
+      case RIGHT:
+        if (next(1) == SHIFT_RIGHT){
+          if (s->info.type == INT8) s->A.i8[0] >>= s->B.i8[0];
+          else if (s->info.type == INT16) s->A.i16[0] >>= s->B.i16[0];
+          else if (s->info.type == INT32) s->A.i32 >>= s->B.i32;
+          consume();
         } else {
-          _num_cmp_operation(>);
+          uint8_t inc = ((code - code_begin) && prev(1) > '0' && prev(1) < '9') ? s->A.i8[0] : 1;
+          if (s->info.type == INT8) s->mem += 1 * inc;
+          else if (s->info.type == INT16) s->mem += 2 * inc;
+          else if (s->info.type == INT32) s->mem += 4 * inc;
+          else if (s->info.type == FLOAT) s->mem += 4 * inc;
         }
         break;
-      }
-      case OUT:{
+      case SUM:
+        if (s->info.type == INT8) s->A.i8[0] += s->B.i8[0];
+        else if (s->info.type == INT16) s->A.i16[0] += s->B.i16[0];
+        else if (s->info.type == INT32) s->A.i32 += s->B.i32;
+        else if (s->info.type == FLOAT) s->A.f32 += s->B.f32;
         break;
-      }
-      case IN:{
+      case SUB:
+        if (s->info.type == INT8) s->A.i8[0] -= s->B.i8[0];
+        else if (s->info.type == INT16) s->A.i16[0] -= s->B.i16[0];
+        else if (s->info.type == INT32) s->A.i32 -= s->B.i32;
+        else if (s->info.type == FLOAT) s->A.f32 -= s->B.f32;
         break;
-      }
-      case STORE:{
-        prev_op = STORE;
-        if (next(1) != LOAD){
-          pe();
+      case MULTI:
+        if (s->info.type == INT8) s->A.i8[0] *= s->B.i8[0];
+        else if (s->info.type == INT16) s->A.i16[0] *= s->B.i16[0];
+        else if (s->info.type == INT32) s->A.i32 *= s->B.i32;
+        else if (s->info.type == FLOAT) s->A.f32 *= s->B.f32;
+        break;
+      case DIV:
+        if (s->info.type == INT8) s->A.i8[0] /= s->B.i8[0];
+        else if (s->info.type == INT16) s->A.i16[0] /= s->B.i16[0];
+        else if (s->info.type == INT32) s->A.i32 /= s->B.i32;
+        else if (s->info.type == FLOAT) s->A.f32 /= s->B.f32;
+        break;
+      case MOD:
+        if (s->info.type == INT8) s->A.i8[0] %= s->B.i8[0];
+        else if (s->info.type == INT16) s->A.i16[0] %= s->B.i16[0];
+        else if (s->info.type == INT32) s->A.i32 %= s->B.i32;
+        break;
+      case AND:
+        if (s->info.type == INT8) s->A.i8[0] &= s->B.i8[0];
+        else if (s->info.type == INT16) s->A.i16[0] &= s->B.i16[0];
+        else if (s->info.type == INT32) s->A.i32 &= s->B.i32;
+        break;
+      case OR:
+        if (s->info.type == INT8) s->A.i8[0] |= s->B.i8[0];
+        else if (s->info.type == INT16) s->A.i16[0] |= s->B.i16[0];
+        else if (s->info.type == INT32) s->A.i32 |= s->B.i32;
+        break;
+      case XOR:
+        if (s->info.type == INT8) s->A.i8[0] ^= s->B.i8[0];
+        else if (s->info.type == INT16) s->A.i16[0] ^= s->B.i16[0];
+        else if (s->info.type == INT32) s->A.i32 ^= s->B.i32;
+        break;
+      case INV:
+        if (s->info.type == INT8) s->A.i8[0] = ~s->A.i8[0];
+        else if (s->info.type == INT16) s->A.i16[0] = ~s->A.i16[0];
+        else if (s->info.type == INT32) s->A.i32 = ~s->A.i32;
+        break;
+      case CLEAR:
+        s->A.i16[0] = 0;
+        s->A.i16[1] = 0;
+        s->B.i16[0] = 0;
+        s->B.i16[1] = 0;
+        break;
+      case SWITCH:
+        s->A.i8[0] ^= s->B.i8[0];
+        s->B.i8[0] ^= s->A.i8[0];
+        s->A.i8[0] ^= s->B.i8[0];
+        s->A.i8[1] ^= s->B.i8[1];
+        s->B.i8[1] ^= s->A.i8[1];
+        s->A.i8[1] ^= s->B.i8[1];
+        s->A.i8[2] ^= s->B.i8[2];
+        s->B.i8[2] ^= s->A.i8[2];
+        s->A.i8[2] ^= s->B.i8[2];
+        s->A.i8[3] ^= s->B.i8[3];
+        s->B.i8[3] ^= s->A.i8[3];
+        s->A.i8[3] ^= s->B.i8[3];
+        break;
+      case STORE:
+        if (s->info.type == INT8) *((uint8_t*)(s->mem)) = s->A.i8[0];
+        else if (s->info.type == INT16) *((uint16_t*)(s->mem)) = s->A.i16[0];
+        else if (s->info.type == INT32) *((uint32_t*)(s->mem)) = s->A.i32;
+        else if (s->info.type == FLOAT) *((float*)(s->mem)) = s->A.f32;
+        break;
+      case LOAD:
+        if (s->info.type == INT8) s->A.i8[0] = *((uint8_t*)(s->mem));
+        else if (s->info.type == INT16) s->A.i16[0] = *((uint16_t*)(s->mem));
+        else if (s->info.type == INT32) s->A.i32 = *((uint32_t*)(s->mem));
+        else if (s->info.type == FLOAT) s->A.f32 = *((float*)(s->mem));
+        break;
+      case T_INT8:
+        s->info.type = 0;
+        s->A.i16[0] = 0;
+        s->A.i16[1] = 0;
+        break;
+      case T_INT16:
+        s->info.type = 1;
+        s->A.i16[0] = 0;
+        s->A.i16[1] = 0;
+        break;
+      case T_INT32:
+        s->info.type = 2;
+        s->A.i32 = 0;
+        break;
+      case T_FLOAT:
+        s->info.type = 3;
+        s->A.f32 = 0;
+        break;
+      case OUT:
+        // printf("%d\n", s->A.i8[0]);
+      case ENDIF:
+      case NOP:
+        break;
+      case IF:
+      case ELSE:
+      case WHILE:
+      case BREAK:
+      case CONTINUE:
+      case ENDWHILE:
+      {
+        // printf("%c %d\n", *code, s->info.comp);
+        uint8_t jmpmatch = JM_NONE;
+        int8_t stack = 1;
+        int8_t inc = 1;
+        if (*code == IF && !s->info.comp){
+          // jump to else ){ + 1 or endif ) + 1
+          jmpmatch = JM_EIFE;
+        } else if (*code == ELSE){
+          //jump to endif ) + 1
+          jmpmatch = JM_ENIF;
+        } else if (*code == WHILE && !s->info.comp){
+          //jump to ENDWHILE ] + 1
+          jmpmatch = JM_EWHI;
+        } else if (*code == BREAK){
+          //jump to ENDWHILE ] + 1
+          jmpmatch = JM_EWHI;
+        } else if (*code == CONTINUE){
+          //jump to while [
+          inc = -1;
+          stack = -1;
+          jmpmatch = JM_WHI0;
+        } else if (*code == ENDWHILE && s->info.comp){
+          //jump to WHILE [ + 1
+          inc = -1;
+          stack = -1;
+          jmpmatch = JM_WHI1;
         }
-        break;
-      }
-      case MEM_JUMP:{
-        break;
-      }
-      case COPY_FROM:{
-        break;
-      }
-      case RUN:{
-        break;
-      }
-      case CODE_JMP:{
-        break;
-      }
-      case BREAK:{
-        break;
-      }
-      case CONTINUE:{
-        break;
-      }
-
-      case SUM:{
-        _num_data_operation(+=);
-        break;
-      }
-      case SUB:{
-        _num_data_operation(-=);
-        break;
-      }
-      case MULTI:{
-        _num_data_operation(*=);
-        break;
-      }
-      case DIV:{
-        _num_data_operation(/=);
-        break;
-      }
-
-      case MOD:{
-        _int_data_operation(/=);
-        break;
-      }
-      case AND:{
-        _int_data_operation(&=);
-        break;
-      }
-      case OR:{
-        _int_data_operation(|=);
-        break;
-      }
-      case XOR:{
-        _int_data_operation(^=);
-        break;
-      }
-      case SHIFT_LEFT:{
-        _int_data_operation(<<=);
-        break;
-      }
-      case SHIFT_RIGHT:{
-        _int_data_operation(>>=);
-        break;
-      }
-      case EQ:{
-        _num_cmp_operation(==);
-        break;
-      }
-      case NEQ:{
-        _num_cmp_operation(!=);
-        break;
-      }
-      case LE:{
-        _num_cmp_operation(<=);
-        break;
-      }
-      case GE:{
-        _num_cmp_operation(>=);
+        if (jmpmatch != JM_NONE){
+          // printf("%c %d\n", *code, jmpmatch);
+          while (*code) {
+            code += inc;
+            // printf("---- %c %d\n", *code, stack);
+            if (*code == IF){
+              stack++;
+            } else if (*code == ELSE && jmpmatch == JM_EIFE && stack == 1) {
+              break;
+            } else if (*code == ENDIF) {
+              stack--;
+              if (jmpmatch <= JM_ENIF && !stack){
+                break;
+              }
+            } else if (*code == WHILE) {
+              stack++;
+              if (jmpmatch >= JM_WHI0 && !stack){
+                break;
+              }
+            } else if (*code == ENDWHILE) {
+              stack--;
+              if (jmpmatch == JM_EWHI && !stack){
+                break;
+              }
+            }
+            if (!*code){
+              return stack;
+            }
+          }
+          if (jmpmatch == JM_WHI0){
+            code--;
+          }
+        }
         break;
       }
       default:
-        pe();
+        if (*code >= '0' && *code <= '9'){
+          if (!(code - code_begin) || ((prev(1) < '0' || prev(1) > '9') && prev(1) != T_INT8 && prev(1) != T_INT16 && prev(1) != T_INT32 && prev(1) != T_FLOAT)){
+            s->A.i16[0] = (*code - '0');
+            s->A.i16[1] = 0;
+          } else {
+            if (s->info.type == INT8) s->A.i8[0] = s->A.i8[0]*10 + (*code - '0');
+            else if (s->info.type == INT16) s->A.i16[0] = s->A.i16[0]*10 + (*code - '0');
+            else if (s->info.type == INT32) s->A.i32 = s->A.i32*10 + (*code - '0');
+            else if (s->info.type == FLOAT) { pe(); }
+          }
+        } else {
+          pe();
+        }
         break;
     }
     code++;
