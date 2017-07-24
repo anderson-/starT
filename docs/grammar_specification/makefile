@@ -12,4 +12,4 @@ clean:
 	rm syntax_diagrams/syntax.html
 
 generate_diagrams:
-	nearley-railroad src/starT.ne -o syntax.html
+	nearley-railroad src/starT.ne -o syntax_diagrams/syntax.html
